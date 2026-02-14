@@ -1,8 +1,8 @@
 import time
-
 from pyrogram import filters
 from pyrogram.enums import ChatType
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
+from pyrogram.errors import ButtonUserPrivacyRestricted
 from py_yt import VideosSearch
 import config
 from ShrutiMusic import app
@@ -39,12 +39,20 @@ async def start_pm(client, message: Message, _):
                     reply_markup=keyboard,
                     message_effect_id=5159385139981059251,
                 )
-            except:
-                return await message.reply_photo(
-                    photo=config.START_IMG_URL,
-                    caption=_["help_1"].format(config.SUPPORT_GROUP),
-                    reply_markup=keyboard,
-                )
+            except Exception:
+                try:
+                    return await message.reply_photo(
+                        photo=config.START_IMG_URL,
+                        caption=_["help_1"].format(config.SUPPORT_GROUP),
+                        reply_markup=keyboard,
+                    )
+                except ButtonUserPrivacyRestricted:
+                    # Fallback if the user has restricted inline button privacy
+                    return await message.reply_photo(
+                        photo=config.START_IMG_URL,
+                        caption=_["help_1"].format(config.SUPPORT_GROUP),
+                    )
+
         if name[0:3] == "sud":
             await sudoers_list(client=client, message=message, _=_)
             if await is_on_off(2):
@@ -53,6 +61,7 @@ async def start_pm(client, message: Message, _):
                     text=f"{message.from_user.mention} ᴊᴜsᴛ sᴛᴀʀᴛᴇᴅ ᴛʜᴇ ʙᴏᴛ ᴛᴏ ᴄʜᴇᴄᴋ <b>sᴜᴅᴏʟɪsᴛ</b>.\n\n<b>ᴜsᴇʀ ɪᴅ :</b> <code>{message.from_user.id}</code>\n<b>ᴜsᴇʀɴᴀᴍᴇ :</b> @{message.from_user.username}",
                 )
             return
+
         if name[0:3] == "inf":
             m = await message.reply_text("🔎")
             query = (str(name)).replace("info_", "", 1)
@@ -87,18 +96,27 @@ async def start_pm(client, message: Message, _):
                     reply_markup=key,
                     message_effect_id=5159385139981059251,
                 )
-            except:
-                await app.send_photo(
-                    chat_id=message.chat.id,
-                    photo=thumbnail,
-                    caption=searched_text,
-                    reply_markup=key,
-                )
+            except Exception:
+                try:
+                    await app.send_photo(
+                        chat_id=message.chat.id,
+                        photo=thumbnail,
+                        caption=searched_text,
+                        reply_markup=key,
+                    )
+                except ButtonUserPrivacyRestricted:
+                    await app.send_photo(
+                        chat_id=message.chat.id,
+                        photo=thumbnail,
+                        caption=searched_text,
+                    )
+
             if await is_on_off(2):
                 return await app.send_message(
                     chat_id=config.LOG_GROUP_ID,
                     text=f"{message.from_user.mention} ᴊᴜsᴛ sᴛᴀʀᴛᴇᴅ ᴛʜᴇ ʙᴏᴛ ᴛᴏ ᴄʜᴇᴄᴋ <b>ᴛʀᴀᴄᴋ ɪɴғᴏʀᴍᴀᴛɪᴏɴ</b>.\n\n<b>ᴜsᴇʀ ɪᴅ :</b> <code>{message.from_user.id}</code>\n<b>ᴜsᴇʀɴᴀᴍᴇ :</b> @{message.from_user.username}",
                 )
+
         if name == "start":
             out = private_panel(_)
             UP, CPU, RAM, DISK = await bot_sys_stats()
@@ -109,17 +127,24 @@ async def start_pm(client, message: Message, _):
                     reply_markup=InlineKeyboardMarkup(out),
                     message_effect_id=5159385139981059251,
                 )
-            except:
-                await message.reply_photo(
-                    photo=config.START_IMG_URL,
-                    caption=_["start_2"].format(message.from_user.mention, app.mention, UP, DISK, CPU, RAM),
-                    reply_markup=InlineKeyboardMarkup(out),
-                )
+            except Exception:
+                try:
+                    await message.reply_photo(
+                        photo=config.START_IMG_URL,
+                        caption=_["start_2"].format(message.from_user.mention, app.mention, UP, DISK, CPU, RAM),
+                        reply_markup=InlineKeyboardMarkup(out),
+                    )
+                except ButtonUserPrivacyRestricted:
+                    await message.reply_photo(
+                        photo=config.START_IMG_URL,
+                        caption=_["start_2"].format(message.from_user.mention, app.mention, UP, DISK, CPU, RAM),
+                    )
             if await is_on_off(2):
                 return await app.send_message(
                     chat_id=config.LOG_GROUP_ID,
                     text=f"{message.from_user.mention} ᴊᴜsᴛ sᴛᴀʀᴛᴇᴅ ᴛʜᴇ ʙᴏᴛ.\n\n<b>ᴜsᴇʀ ɪᴅ :</b> <code>{message.from_user.id}</code>\n<b>ᴜsᴇʀɴᴀᴍᴇ :</b> @{message.from_user.username}",
                 )
+
     else:
         out = private_panel(_)
         UP, CPU, RAM, DISK = await bot_sys_stats()
@@ -130,12 +155,18 @@ async def start_pm(client, message: Message, _):
                 reply_markup=InlineKeyboardMarkup(out),
                 message_effect_id=5159385139981059251,
             )
-        except:
-            await message.reply_photo(
-                photo=config.START_IMG_URL,
-                caption=_["start_2"].format(message.from_user.mention, app.mention, UP, DISK, CPU, RAM),
-                reply_markup=InlineKeyboardMarkup(out),
-            )
+        except Exception:
+            try:
+                await message.reply_photo(
+                    photo=config.START_IMG_URL,
+                    caption=_["start_2"].format(message.from_user.mention, app.mention, UP, DISK, CPU, RAM),
+                    reply_markup=InlineKeyboardMarkup(out),
+                )
+            except ButtonUserPrivacyRestricted:
+                await message.reply_photo(
+                    photo=config.START_IMG_URL,
+                    caption=_["start_2"].format(message.from_user.mention, app.mention, UP, DISK, CPU, RAM),
+                )
         if await is_on_off(2):
             return await app.send_message(
                 chat_id=config.LOG_GROUP_ID,
@@ -155,12 +186,18 @@ async def start_gp(client, message: Message, _):
             reply_markup=InlineKeyboardMarkup(out),
             message_effect_id=5159385139981059251,
         )
-    except:
-        await message.reply_photo(
-            photo=config.START_IMG_URL,
-            caption=_["start_1"].format(app.mention, get_readable_time(uptime)),
-            reply_markup=InlineKeyboardMarkup(out),
-        )
+    except Exception:
+        try:
+            await message.reply_photo(
+                photo=config.START_IMG_URL,
+                caption=_["start_1"].format(app.mention, get_readable_time(uptime)),
+                reply_markup=InlineKeyboardMarkup(out),
+            )
+        except ButtonUserPrivacyRestricted:
+             await message.reply_photo(
+                photo=config.START_IMG_URL,
+                caption=_["start_1"].format(app.mention, get_readable_time(uptime)),
+            )
     return await add_served_chat(message.chat.id)
 
 
@@ -203,18 +240,30 @@ async def welcome(client, message: Message):
                         reply_markup=InlineKeyboardMarkup(out),
                         message_effect_id=5159385139981059251,
                     )
-                except:
-                    await message.reply_photo(
-                        photo=config.START_IMG_URL,
-                        caption=_["start_3"].format(
-                            message.from_user.first_name,
-                            app.mention,
-                            message.chat.title,
-                            app.mention,
-                        ),
-                        reply_markup=InlineKeyboardMarkup(out),
-                    )
+                except Exception:
+                    try:
+                        await message.reply_photo(
+                            photo=config.START_IMG_URL,
+                            caption=_["start_3"].format(
+                                message.from_user.first_name,
+                                app.mention,
+                                message.chat.title,
+                                app.mention,
+                            ),
+                            reply_markup=InlineKeyboardMarkup(out),
+                        )
+                    except ButtonUserPrivacyRestricted:
+                        await message.reply_photo(
+                            photo=config.START_IMG_URL,
+                            caption=_["start_3"].format(
+                                message.from_user.first_name,
+                                app.mention,
+                                message.chat.title,
+                                app.mention,
+                            ),
+                        )
                 await add_served_chat(message.chat.id)
                 await message.stop_propagation()
         except Exception as ex:
             print(ex)
+
