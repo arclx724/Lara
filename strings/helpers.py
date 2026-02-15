@@ -364,7 +364,7 @@ HELP_36 = """ 💑 <b>COUPLE OF THE DAY</b> 💖
 📸 Beautiful framed photo with both DPs will be generated 🖼️  
 📅 Next couple will be selected automatically tomorrow ⏳ """
 
-HELP_37 = """🤖 <b>ᴀᴠᴀɪʟᴀʙʟᴇ ɪɴ ᴛʜᴇsᴇ ʙᴏᴛs</b> 🤖
+HELP_37 = """<emoji id="5224607267797606837">☄️</emoji> <b>ᴀᴠᴀɪʟᴀʙʟᴇ ɪɴ ᴛʜᴇsᴇ ʙᴏᴛs</b> 🤖
 
 🔹 <b>ғᴜɴᴄᴛɪᴏɴ:</b>  
 • <b>ʀᴛᴍᴘs sᴛʀᴇᴀᴍɪɴɢ</b> 🎥
