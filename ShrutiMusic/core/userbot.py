@@ -1,23 +1,9 @@
-# Copyright (c) 2025 Nand Yaduwanshi <NoxxOP>
-# Location: Supaul, Bihar
-#
-# All rights reserved.
-#
-# This code is the intellectual property of Nand Yaduwanshi.
-# You are not allowed to copy, modify, redistribute, or use this
-# code for commercial or personal projects without explicit permission.
-#
-# Allowed:
-# - Forking for personal learning
-# - Submitting improvements via pull requests
-#
-# Contact for permissions:
-# Email: badboy809075@gmail.com
-
 import sys
 from pyrogram import Client
 import config
-from ShrutiMusic import LOGGER
+from logging import getLogger
+
+LOGGER = getLogger(__name__)
 
 assistants = []
 assistantids = []
@@ -61,7 +47,7 @@ class Userbot:
         )
 
     async def start(self):
-        LOGGER(__name__).info(f"Starting Assistants...")
+        LOGGER.info("Starting Assistants...")
         
         if config.STRING1:
             await self.one.start()
@@ -73,7 +59,7 @@ class Userbot:
             try:
                 await self.one.send_message(config.LOG_GROUP_ID, "✅ Assistant 1 Started Successfully")
             except:
-                LOGGER(__name__).error(
+                LOGGER.error(
                     "Assistant Account 1 has failed to access the log Group. Make sure that you have added your assistant to your log group and promoted as admin!"
                 )
                 sys.exit()
@@ -81,7 +67,7 @@ class Userbot:
             self.one.name = self.one.me.mention
             self.one.username = self.one.me.username
             assistantids.append(self.one.id)
-            LOGGER(__name__).info(f"Assistant 1 Started as {self.one.name}")
+            LOGGER.info(f"Assistant 1 Started as {self.one.name}")
 
         if config.STRING2:
             await self.two.start()
@@ -93,7 +79,7 @@ class Userbot:
             try:
                 await self.two.send_message(config.LOG_GROUP_ID, "✅ Assistant 2 Started Successfully")
             except:
-                LOGGER(__name__).error(
+                LOGGER.error(
                     "Assistant Account 2 has failed to access the log Group. Make sure that you have added your assistant to your log group and promoted as admin!"
                 )
                 sys.exit()
@@ -101,7 +87,7 @@ class Userbot:
             self.two.name = self.two.me.mention
             self.two.username = self.two.me.username
             assistantids.append(self.two.id)
-            LOGGER(__name__).info(f"Assistant 2 Started as {self.two.name}")
+            LOGGER.info(f"Assistant 2 Started as {self.two.name}")
 
         if config.STRING3:
             await self.three.start()
@@ -113,7 +99,7 @@ class Userbot:
             try:
                 await self.three.send_message(config.LOG_GROUP_ID, "✅ Assistant 3 Started Successfully")
             except:
-                LOGGER(__name__).error(
+                LOGGER.error(
                     "Assistant Account 3 has failed to access the log Group. Make sure that you have added your assistant to your log group and promoted as admin!"
                 )
                 sys.exit()
@@ -121,7 +107,7 @@ class Userbot:
             self.three.name = self.three.me.mention
             self.three.username = self.three.me.username
             assistantids.append(self.three.id)
-            LOGGER(__name__).info(f"Assistant 3 Started as {self.three.name}")
+            LOGGER.info(f"Assistant 3 Started as {self.three.name}")
 
         if config.STRING4:
             await self.four.start()
@@ -133,7 +119,7 @@ class Userbot:
             try:
                 await self.four.send_message(config.LOG_GROUP_ID, "✅ Assistant 4 Started Successfully")
             except:
-                LOGGER(__name__).error(
+                LOGGER.error(
                     "Assistant Account 4 has failed to access the log Group. Make sure that you have added your assistant to your log group and promoted as admin!"
                 )
                 sys.exit()
@@ -141,7 +127,7 @@ class Userbot:
             self.four.name = self.four.me.mention
             self.four.username = self.four.me.username
             assistantids.append(self.four.id)
-            LOGGER(__name__).info(f"Assistant 4 Started as {self.four.name}")
+            LOGGER.info(f"Assistant 4 Started as {self.four.name}")
 
         if config.STRING5:
             await self.five.start()
@@ -153,7 +139,7 @@ class Userbot:
             try:
                 await self.five.send_message(config.LOG_GROUP_ID, "✅ Assistant 5 Started Successfully")
             except:
-                LOGGER(__name__).error(
+                LOGGER.error(
                     "Assistant Account 5 has failed to access the log Group. Make sure that you have added your assistant to your log group and promoted as admin!"
                 )
                 sys.exit()
@@ -161,10 +147,10 @@ class Userbot:
             self.five.name = self.five.me.mention
             self.five.username = self.five.me.username
             assistantids.append(self.five.id)
-            LOGGER(__name__).info(f"Assistant 5 Started as {self.five.name}")
+            LOGGER.info(f"Assistant 5 Started as {self.five.name}")
 
     async def stop(self):
-        LOGGER(__name__).info(f"Stopping Assistants...")
+        LOGGER.info("Stopping Assistants...")
         try:
             if config.STRING1:
                 await self.one.stop()
