@@ -6,17 +6,15 @@ import yt_dlp
 from pyrogram.enums import MessageEntityType
 from pyrogram.types import Message
 from ShrutiMusic.utils.formatters import time_to_seconds
-import aiohttp
 from ShrutiMusic import LOGGER
-from urllib.parse import urlparse  # Naya Security Import
+from urllib.parse import urlparse
 
 try:
     from py_yt import VideosSearch
 except ImportError:
     from youtubesearchpython.__future__ import VideosSearch
 
-API_URL = "https://shrutibots.site"
-
+# SECURITY PATCH: Removed 3rd Party API Dependency (shrutibots.site). Now using direct yt-dlp.
 async def download_song(link: str) -> str:
     video_id = link.split('v=')[-1].split('&')[0] if 'v=' in link else link
 
@@ -30,55 +28,30 @@ async def download_song(link: str) -> str:
     if os.path.exists(file_path):
         return file_path
 
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': os.path.join(DOWNLOAD_DIR, f"{video_id}.%(ext)s"),
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+        'quiet': True,
+        'no_warnings': True,
+    }
     try:
-        async with aiohttp.ClientSession() as session:
-            params = {"url": video_id, "type": "audio"}
-            
-            async with session.get(
-                f"{API_URL}/download",
-                params=params,
-                timeout=aiohttp.ClientTimeout(total=7)
-            ) as response:
-                if response.status != 200:
-                    return None
-
-                data = await response.json()
-                download_token = data.get("download_token")
-                
-                if not download_token:
-                    return None
-                
-                stream_url = f"{API_URL}/stream/{video_id}?type=audio&token={download_token}"
-                
-                async with session.get(
-                    stream_url,
-                    timeout=aiohttp.ClientTimeout(total=300)
-                ) as file_response:
-                    if file_response.status == 302:
-                        redirect_url = file_response.headers.get('Location')
-                        if redirect_url:
-                            async with session.get(redirect_url) as final_response:
-                                if final_response.status != 200:
-                                    return None
-                                with open(file_path, "wb") as f:
-                                    async for chunk in final_response.content.iter_chunked(16384):
-                                        f.write(chunk)
-                                if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
-                                    return file_path
-                                else:
-                                    return None
-                    elif file_response.status == 200:
-                        with open(file_path, "wb") as f:
-                            async for chunk in file_response.content.iter_chunked(16384):
-                                f.write(chunk)
-                        if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
-                            return file_path
-                        else:
-                            return None
-                    else:
-                        return None
-
-    except Exception:
+        def extract_and_download():
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([f"https://www.youtube.com/watch?v={video_id}"])
+        
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, extract_and_download)
+        
+        if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+            return file_path
+        return None
+    except Exception as e:
+        LOGGER.error(f"Audio Download Failed: {e}")
         if os.path.exists(file_path):
             try:
                 os.remove(file_path)
@@ -99,55 +72,25 @@ async def download_video(link: str) -> str:
     if os.path.exists(file_path):
         return file_path
 
+    ydl_opts = {
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'outtmpl': file_path,
+        'quiet': True,
+        'no_warnings': True,
+    }
     try:
-        async with aiohttp.ClientSession() as session:
-            params = {"url": video_id, "type": "video"}
-            
-            async with session.get(
-                f"{API_URL}/download",
-                params=params,
-                timeout=aiohttp.ClientTimeout(total=7)
-            ) as response:
-                if response.status != 200:
-                    return None
-
-                data = await response.json()
-                download_token = data.get("download_token")
-                
-                if not download_token:
-                    return None
-                
-                stream_url = f"{API_URL}/stream/{video_id}?type=video&token={download_token}"
-                
-                async with session.get(
-                    stream_url,
-                    timeout=aiohttp.ClientTimeout(total=600)
-                ) as file_response:
-                    if file_response.status == 302:
-                        redirect_url = file_response.headers.get('Location')
-                        if redirect_url:
-                            async with session.get(redirect_url) as final_response:
-                                if final_response.status != 200:
-                                    return None
-                                with open(file_path, "wb") as f:
-                                    async for chunk in final_response.content.iter_chunked(16384):
-                                        f.write(chunk)
-                                if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
-                                    return file_path
-                                else:
-                                    return None
-                    elif file_response.status == 200:
-                        with open(file_path, "wb") as f:
-                            async for chunk in file_response.content.iter_chunked(16384):
-                                f.write(chunk)
-                        if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
-                            return file_path
-                        else:
-                            return None
-                    else:
-                        return None
-
-    except Exception:
+        def extract_and_download():
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([f"https://www.youtube.com/watch?v={video_id}"])
+        
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, extract_and_download)
+        
+        if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+            return file_path
+        return None
+    except Exception as e:
+        LOGGER.error(f"Video Download Failed: {e}")
         if os.path.exists(file_path):
             try:
                 os.remove(file_path)
@@ -182,21 +125,14 @@ class YouTubeAPI:
     def is_safe_youtube_url(self, link: str) -> bool:
         try:
             parsed = urlparse(link)
-            
-            # 1. Sirf HTTP/HTTPS allow karega
             if parsed.scheme not in ['http', 'https']:
                 return False
-                
-            # 2. Sirf asli YouTube domains allow karega
             valid_domains = ['youtube.com', 'www.youtube.com', 'youtu.be', 'music.youtube.com']
             if parsed.netloc not in valid_domains:
                 return False
-                
-            # 3. Command Injection ke characters rokega
             danger_chars = [';', '|', '&', '$', '`', '>', '<', '"', "'"]
             if any(char in link for char in danger_chars):
                 return False
-                
             return True
         except Exception:
             return False
@@ -284,10 +220,8 @@ class YouTubeAPI:
         if "&" in link:
             link = link.split("&")[0]
             
-        # --- SECURITY CHECK APPLY KIYA ---
         if not self.is_safe_youtube_url(link):
-            return [] # Hacker block ho jayega aur usko khali list milegi
-        # ---------------------------------
+            return [] 
 
         playlist = await shell_cmd(
             f"yt-dlp -i --get-id --flat-playlist --playlist-end {limit} --skip-download {link}"
@@ -385,4 +319,4 @@ class YouTubeAPI:
                 return None, False
         except Exception:
             return None, False
-
+            
