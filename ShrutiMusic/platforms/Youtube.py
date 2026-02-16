@@ -6,15 +6,16 @@ import yt_dlp
 from pyrogram.enums import MessageEntityType
 from pyrogram.types import Message
 from ShrutiMusic.utils.formatters import time_to_seconds
-from ShrutiMusic import LOGGER
+from logging import getLogger
 from urllib.parse import urlparse
+
+LOGGER = getLogger(__name__)
 
 try:
     from py_yt import VideosSearch
 except ImportError:
     from youtubesearchpython.__future__ import VideosSearch
 
-# SECURITY PATCH: Removed 3rd Party API Dependency (shrutibots.site). Now using direct yt-dlp.
 async def download_song(link: str) -> str:
     video_id = link.split('v=')[-1].split('&')[0] if 'v=' in link else link
 
@@ -121,7 +122,6 @@ class YouTubeAPI:
         self.listbase = "https://youtube.com/playlist?list="
         self.reg = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
-    # --- TITANIUM SECURITY GUARD ---
     def is_safe_youtube_url(self, link: str) -> bool:
         try:
             parsed = urlparse(link)
@@ -136,7 +136,6 @@ class YouTubeAPI:
             return True
         except Exception:
             return False
-    # -------------------------------
 
     async def exists(self, link: str, videoid: Union[bool, str] = None):
         if videoid:
