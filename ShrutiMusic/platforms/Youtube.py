@@ -8,6 +8,7 @@ from pyrogram.types import Message
 from ShrutiMusic.utils.formatters import time_to_seconds
 import aiohttp
 from ShrutiMusic import LOGGER
+from urllib.parse import urlparse  # Naya Security Import
 
 try:
     from py_yt import VideosSearch
@@ -168,6 +169,7 @@ async def shell_cmd(cmd):
             return errorz.decode("utf-8")
     return out.decode("utf-8")
 
+
 class YouTubeAPI:
     def __init__(self):
         self.base = "https://www.youtube.com/watch?v="
@@ -175,6 +177,30 @@ class YouTubeAPI:
         self.status = "https://www.youtube.com/oembed?url="
         self.listbase = "https://youtube.com/playlist?list="
         self.reg = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+
+    # --- TITANIUM SECURITY GUARD ---
+    def is_safe_youtube_url(self, link: str) -> bool:
+        try:
+            parsed = urlparse(link)
+            
+            # 1. Sirf HTTP/HTTPS allow karega
+            if parsed.scheme not in ['http', 'https']:
+                return False
+                
+            # 2. Sirf asli YouTube domains allow karega
+            valid_domains = ['youtube.com', 'www.youtube.com', 'youtu.be', 'music.youtube.com']
+            if parsed.netloc not in valid_domains:
+                return False
+                
+            # 3. Command Injection ke characters rokega
+            danger_chars = [';', '|', '&', '$', '`', '>', '<', '"', "'"]
+            if any(char in link for char in danger_chars):
+                return False
+                
+            return True
+        except Exception:
+            return False
+    # -------------------------------
 
     async def exists(self, link: str, videoid: Union[bool, str] = None):
         if videoid:
@@ -257,6 +283,12 @@ class YouTubeAPI:
             link = self.listbase + link
         if "&" in link:
             link = link.split("&")[0]
+            
+        # --- SECURITY CHECK APPLY KIYA ---
+        if not self.is_safe_youtube_url(link):
+            return [] # Hacker block ho jayega aur usko khali list milegi
+        # ---------------------------------
+
         playlist = await shell_cmd(
             f"yt-dlp -i --get-id --flat-playlist --playlist-end {limit} --skip-download {link}"
         )
@@ -353,3 +385,4 @@ class YouTubeAPI:
                 return None, False
         except Exception:
             return None, False
+
