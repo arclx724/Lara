@@ -34,12 +34,12 @@
     },
     "OWNER_ID": {
       "description": "The user id of user whom you would like to add as OWNER.",
-      "value": "7574330905",
+      "value": "8042205941",
       "required": true
     },
     "BOT_USERNAME": {
       "description": "The username of your bot (without @)",
-      "value": "ShrutixMusicBot",
+      "value": "BillieMusicBot",
       "required": true
     },
     "UPSTREAM_REPO": {
@@ -74,32 +74,32 @@
     },
     "SUPPORT_GROUP": {
       "description": "Your support group link",
-      "value": "https://t.me/ShrutiBotsupport",
+      "value": "https://t.me/FakeAaru",
       "required": false
     },
     "SUPPORT_CHANNEL": {
       "description": "Your support channel link",
-      "value": "https://t.me/ShrutiBots",
+      "value": "https://t.me/FakeAaru",
       "required": false
     },
     "INSTAGRAM": {
       "description": "Your Instagram profile link or Any Link",
-      "value": "https://instagram.com/yaduwanshi_nand",
+      "value": "https://t.me/FakeAaru",
       "required": false
     },
     "YOUTUBE": {
       "description": "Your YouTube channel link or Any Link",
-      "value": "https://youtube.com/@NandEditz",
+      "value": "https://t.me/FakeAaru",
       "required": false
     },
     "GITHUB": {
       "description": "Your GitHub profile link or Any Link",
-      "value": "https://github.com/NoxxOP",
+      "value": "https://t.me/FakeAaru",
       "required": false
     },
     "DONATE": {
       "description": "Link where people can support/donate or Any Link",
-      "value": "http://bit.ly/3NITa3G",
+      "value": "https://t.me/FakeAaru",
       "required": false
     },
     "START_IMG_URL": {
