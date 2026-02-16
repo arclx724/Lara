@@ -1,27 +1,8 @@
-# Copyright (c) 2025 Nand Yaduwanshi <NoxxOP>
-# Location: Supaul, Bihar
-#
-# All rights reserved.
-#
-# This code is the intellectual property of Nand Yaduwanshi.
-# You are not allowed to copy, modify, redistribute, or use this
-# code for commercial or personal projects without explicit permission.
-#
-# Allowed:
-# - Forking for personal learning
-# - Submitting improvements via pull requests
-#
-# Not Allowed:
-# - Claiming this code as your own
-# - Re-uploading without credit or permission
-# - Selling or using commercially
-#
-# Contact for permissions:
-# Email: badboy809075@gmail.com
-
-
 import random
 import string
+import socket
+import ipaddress
+from urllib.parse import urlparse
 
 from pyrogram import filters
 from pyrogram.types import InlineKeyboardMarkup, InputMediaPhoto, Message
@@ -46,6 +27,28 @@ from ShrutiMusic.utils.logger import play_logs
 from ShrutiMusic.utils.stream.stream import stream
 from config import BANNED_USERS, lyrical
 
+# --- SECURITY PATCH: URL VALIDATOR ---
+def is_safe_url(url: str) -> bool:
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ['http', 'https']:
+            return False
+        hostname = parsed.hostname
+        if not hostname:
+            return False
+        
+        # Resolve IP to check if it's pointing to a local/private network
+        ip = socket.gethostbyname(hostname)
+        ip_obj = ipaddress.ip_address(ip)
+        
+        # Block Private, Loopback, Link-Local, and Reserved IPs
+        if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_multicast or ip_obj.is_reserved:
+            return False
+        return True
+    except Exception:
+        # If hostname resolution fails or URL is invalid
+        return False
+# --------------------------------------
 
 @app.on_message(
     filters.command(
@@ -312,6 +315,10 @@ async def play_commnd(
                 return await mystic.edit_text(err)
             return await mystic.delete()
         else:
+            # --- SECURITY PATCH INSTALLED HERE ---
+            if not is_safe_url(url):
+                return await mystic.edit_text("❌ **Security Alert:** This URL is blocked due to security reasons. It looks like an internal/private IP. Please provide a valid public link.")
+            # -------------------------------------
             try:
                 await Nand.stream_call(url)
             except NoActiveGroupCall:
@@ -691,15 +698,3 @@ async def slider_queries(client, CallbackQuery, _):
         return await CallbackQuery.edit_message_media(
             media=med, reply_markup=InlineKeyboardMarkup(buttons)
         )
-
-
-# ©️ Copyright Reserved - @NoxxOP  Nand Yaduwanshi
-
-# ===========================================
-# ©️ 2025 Nand Yaduwanshi (aka @NoxxOP)
-# 🔗 GitHub : https://github.com/NoxxOP/ShrutiMusic
-# 📢 Telegram Channel : https://t.me/ShrutiBots
-# ===========================================
-
-
-# ❤️ Love From ShrutiBots 
