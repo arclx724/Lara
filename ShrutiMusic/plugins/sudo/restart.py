@@ -49,15 +49,18 @@ async def update_(client, message, _):
         return await response.edit(_["server_4"])
     except InvalidGitRepositoryError:
         return await response.edit(_["server_5"])
+    
     to_exc = f"git fetch origin {config.UPSTREAM_BRANCH} &> /dev/null"
     os.system(to_exc)
     await asyncio.sleep(7)
+    
     verification = ""
     REPO_ = repo.remotes.origin.url.split(".git")[0]
     for checks in repo.iter_commits(f"HEAD..origin/{config.UPSTREAM_BRANCH}"):
         verification = str(checks.count())
     if verification == "":
         return await response.edit(_["server_6"])
+        
     updates = ""
     ordinal = lambda format: "%d%s" % (
         format,
@@ -65,8 +68,10 @@ async def update_(client, message, _):
     )
     for info in repo.iter_commits(f"HEAD..origin/{config.UPSTREAM_BRANCH}"):
         updates += f"<b>➣ #{info.count()}: <a href={REPO_}/commit/{info}>{info.summary}</a> ʙʏ -> {info.author}</b>\n\t\t\t\t<b>➥ ᴄᴏᴍᴍɪᴛᴇᴅ ᴏɴ :</b> {ordinal(int(datetime.fromtimestamp(info.committed_date).strftime('%d')))} {datetime.fromtimestamp(info.committed_date).strftime('%b')}, {datetime.fromtimestamp(info.committed_date).strftime('%Y')}\n\n"
+    
     _update_response_ = "<b>ᴀ ɴᴇᴡ ᴜᴩᴅᴀᴛᴇ ɪs ᴀᴠᴀɪʟᴀʙʟᴇ ғᴏʀ ᴛʜᴇ ʙᴏᴛ !</b>\n\n➣ ᴩᴜsʜɪɴɢ ᴜᴩᴅᴀᴛᴇs ɴᴏᴡ\n\n<b><u>ᴜᴩᴅᴀᴛᴇs:</u></b>\n\n"
     _final_updates_ = _update_response_ + updates
+    
     if len(_final_updates_) > 4096:
         url = await NandBin(updates)
         nrs = await response.edit(
@@ -74,6 +79,7 @@ async def update_(client, message, _):
         )
     else:
         nrs = await response.edit(_final_updates_, disable_web_page_preview=True)
+        
     os.system("git stash &> /dev/null && git pull")
 
     try:
@@ -92,13 +98,10 @@ async def update_(client, message, _):
     except:
         pass
 
-            if await is_heroku():
+    if await is_heroku():
         try:
             os.system(f"kill -9 {os.getpid()} && bash start")
             return
-        except Exception as err:
-            pass
-
         except Exception as err:
             await response.edit(f"{nrs.text}\n\n{_['server_9']}")
             return await app.send_message(
