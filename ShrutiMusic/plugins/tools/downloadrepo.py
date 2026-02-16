@@ -1,35 +1,12 @@
-# Copyright (c) 2025 Nand Yaduwanshi <NoxxOP>
-# Location: Supaul, Bihar
-#
-# All rights reserved.
-#
-# This code is the intellectual property of Nand Yaduwanshi.
-# You are not allowed to copy, modify, redistribute, or use this
-# code for commercial or personal projects without explicit permission.
-#
-# Allowed:
-# - Forking for personal learning
-# - Submitting improvements via pull requests
-#
-# Not Allowed:
-# - Claiming this code as your own
-# - Re-uploading without credit or permission
-# - Selling or using commercially
-#
-# Contact for permissions:
-# Email: badboy809075@gmail.com
-
-
 import os
 import shutil
-
+import re
 import git
 from pyrogram import filters
-
 from ShrutiMusic import app
+from ShrutiMusic.misc import SUDOERS # SECURITY PATCH: Import SUDOERS
 
-
-@app.on_message(filters.command(["downloadrepo"]))
+@app.on_message(filters.command(["downloadrepo"]) & SUDOERS) # SECURITY PATCH: Restricted to Owner/Sudo
 def download_repo(_, message):
     if len(message.command) != 2:
         message.reply_text(
@@ -38,14 +15,21 @@ def download_repo(_, message):
         return
 
     repo_url = message.command[1]
+    
+    # SECURITY PATCH: Strict URL validation to prevent Command Injection
+    if not re.match(r"^https?://(www\.)?github\.com/[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+/?$", repo_url):
+        return message.reply_text("❌ **Security Alert:** ɪɴᴠᴀʟɪᴅ ɢɪᴛʜᴜʙ ᴜʀʟ. ᴘʟᴇᴀsᴇ ᴘʀᴏᴠɪᴅᴇ ᴀ ᴠᴀʟɪᴅ sᴇᴄᴜʀᴇ ᴜʀʟ.")
+
+    msg = message.reply_text("📥 ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʀᴇᴘᴏsɪᴛᴏʀʏ, ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ...")
     zip_path = download_and_zip_repo(repo_url)
 
     if zip_path:
         with open(zip_path, "rb") as zip_file:
             message.reply_document(zip_file)
         os.remove(zip_path)
+        msg.delete()
     else:
-        message.reply_text("ᴜɴᴀʙʟᴇ ᴛᴏ ᴅᴏᴡɴʟᴏᴀᴅ ᴛʜᴇ sᴘᴇᴄɪғɪᴇᴅ ɢɪᴛʜᴜʙ ʀᴇᴘᴏsɪᴛᴏʀʏ.")
+        msg.edit_text("❌ ᴜɴᴀʙʟᴇ ᴛᴏ ᴅᴏᴡɴʟᴏᴀᴅ ᴛʜᴇ sᴘᴇᴄɪғɪᴇᴅ ɢɪᴛʜᴜʙ ʀᴇᴘᴏsɪᴛᴏʀʏ.")
 
 
 def download_and_zip_repo(repo_url):
@@ -84,20 +68,4 @@ Dᴏᴡɴᴏᴀᴅ ᴀɴᴅ ʀᴇᴛʀɪᴇᴠᴇ ғɪᴇs ғʀᴏᴍ ᴀ Gɪᴛ
 - Cʀᴇᴀᴛᴇs ᴀ ᴢɪᴘ ғɪᴇ ᴏғ ᴛʜᴇ ʀᴇᴘᴏsɪᴛᴏʀʏ.
 - Sᴇɴᴅs ᴛʜᴇ ᴢɪᴘ ғɪᴇ ʙᴀᴄᴋ ᴀs ᴀ ᴅᴏᴄᴜᴍᴇɴᴛ.
 - Iғ ᴛʜᴇ ᴅᴏᴡɴᴏᴀᴅ ғᴀɪs, ᴀɴ ᴇʀʀᴏʀ ᴍᴇssᴀɢᴇ ᴡɪ ʙᴇ ᴅɪsᴘᴀʏᴇᴅ.
-
-**Exᴀᴍᴘᴇs:**
-- `/ᴅᴏᴡɴᴏᴀᴅʀᴇᴘᴏ ʜᴛᴛᴘs://ɢɪᴛʜᴜʙ.ᴄᴏᴍ/ᴜsᴇʀɴᴀᴍᴇ/ʀᴇᴘᴏsɪᴛᴏʀʏ`
-
 """
-
-
-# ©️ Copyright Reserved - @NoxxOP  Nand Yaduwanshi
-
-# ===========================================
-# ©️ 2025 Nand Yaduwanshi (aka @NoxxOP)
-# 🔗 GitHub : https://github.com/NoxxOP/ShrutiMusic
-# 📢 Telegram Channel : https://t.me/ShrutiBots
-# ===========================================
-
-
-# ❤️ Love From ShrutiBots 
