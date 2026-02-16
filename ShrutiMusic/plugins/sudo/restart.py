@@ -92,10 +92,12 @@ async def update_(client, message, _):
     except:
         pass
 
-        if await is_heroku():
+            if await is_heroku():
         try:
             os.system(f"kill -9 {os.getpid()} && bash start")
             return
+        except Exception as err:
+            pass
 
         except Exception as err:
             await response.edit(f"{nrs.text}\n\n{_['server_9']}")
