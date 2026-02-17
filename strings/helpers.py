@@ -315,11 +315,14 @@ HELP_30 = """ 🔤 <b>FONT CONVERTER</b> ✨
 • /font [text] - Converts simple text to beautiful text by changing its font 🎨 """
 
 # 🤬 GALI COMMANDS
-HELP_31 = """ 🤬 <b>GALI COMMANDS</b> 😤
+HELP_31 = """ 🛡 <b>Abuse Commands:</b>
 
 <b>Commands:</b>
-• /gali - Send random gali (works in DM) 💢
-• .gali - Alternative command format 🔥 """
+• /abuse on or enable - Enable filter
+• /abuse off or disable - Disable filter
+• /authabuse - Whitelist a user (Reply/Username/ID)
+• /unauthabuse - Remove from whitelist
+• /authlistabuse - See whitelisted users"""
 
 # 🤖 BOT LIST
 HELP_32 = """ 🤖 <b>BOT LIST</b> 🎯
