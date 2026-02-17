@@ -80,7 +80,6 @@ async def get_target_user(client, message):
     if len(message.command) > 1:
         target = message.text.split(None, 1)[1]
         try:
-            # Resolves @username, ID, or phone number
             user = await client.get_users(target)
             return user
         except:
@@ -97,11 +96,11 @@ async def toggle_abuse(client, message):
     if len(message.command) == 1:
         text = (
             "<b>🛡 Abuse Filter Commands:</b>\n\n"
-            "• <code>/abuse on</code> ya <code>enable</code> - Filter chalu karein\n"
-            "• <code>/abuse off</code> ya <code>disable</code> - Filter band karein\n"
-            "• <code>/authabuse</code> ya <code>/abuseauth</code> - User ko chhoot dein (Reply/Username/ID)\n"
-            "• <code>/unauthabuse</code> ya <code>/unauth</code> - User se chhoot wapas lein\n"
-            "• <code>/authlistabuse</code> - Whitelisted logo ki list dekhein"
+            "• <code>/abuse on</code> or <code>enable</code> - Enable filter\n"
+            "• <code>/abuse off</code> or <code>disable</code> - Disable filter\n"
+            "• <code>/authabuse</code> - Whitelist a user (Reply/Username/ID)\n"
+            "• <code>/unauthabuse</code> - Remove from whitelist\n"
+            "• <code>/authlistabuse</code> - See whitelisted users"
         )
         return await message.reply_text(text, parse_mode=ParseMode.HTML)
 
@@ -123,10 +122,10 @@ async def auth_user(client, message):
 
     target = await get_target_user(client, message)
     if not target:
-        return await message.reply_text("⚠️ Sahi user nahi mila! \nUse: <code>/authabuse @username</code> ya <code>User ID</code> ya fir kisi message par <b>Reply</b> karein.", parse_mode=ParseMode.HTML)
+        return await message.reply_text("⚠️ Target not found! \nUse: <code>/authabuse @username</code> or <code>User ID</code> or <b>Reply</b> to a message.", parse_mode=ParseMode.HTML)
 
     await add_whitelist(message.chat.id, target.id)
-    await message.reply_text(f"✅ {target.mention} ko abuse filter se chhoot (whitelist) mil gayi hai.", parse_mode=ParseMode.HTML)
+    await message.reply_text(f"✅ {target.mention} has been whitelisted from the abuse filter.", parse_mode=ParseMode.HTML)
 
 
 @app.on_message(filters.command(["unauthabuse", "unauth"]) & filters.group)
@@ -136,10 +135,10 @@ async def unauth_user(client, message):
 
     target = await get_target_user(client, message)
     if not target:
-        return await message.reply_text("⚠️ Sahi user nahi mila! \nUse: <code>/unauthabuse @username</code> ya <code>User ID</code> ya fir kisi message par <b>Reply</b> karein.", parse_mode=ParseMode.HTML)
+        return await message.reply_text("⚠️ Target not found! \nUse: <code>/unauthabuse @username</code> or <code>User ID</code> or <b>Reply</b> to a message.", parse_mode=ParseMode.HTML)
 
     await remove_whitelist(message.chat.id, target.id)
-    await message.reply_text(f"🚫 {target.mention} ko whitelist se nikal diya gaya hai. Ab gaali dene par message delete hoga.", parse_mode=ParseMode.HTML)
+    await message.reply_text(f"🚫 {target.mention} has been removed from the whitelist.", parse_mode=ParseMode.HTML)
 
 
 @app.on_message(filters.command("authlistabuse") & filters.group)
@@ -149,9 +148,9 @@ async def auth_list(client, message):
 
     users = await get_whitelisted_users(message.chat.id)
     if not users:
-        return await message.reply_text("📂 Whitelist abhi empty hai. Kisi ko chhoot nahi mili hai.")
+        return await message.reply_text("📂 Whitelist is empty.")
     
-    text = "📋 <b>Whitelisted Users (Jinhe gaali dene ki chhoot hai):</b>\n\n"
+    text = "📋 <b>Whitelisted Users:</b>\n\n"
     for uid in users:
         try:
             u = await app.get_users(uid)
@@ -168,17 +167,16 @@ async def abuse_watcher(client, message):
     if not text:
         return
 
-    # Check if filter is ON in database
     if not await is_abuse_enabled(message.chat.id):
         return
 
-    # Check if user is whitelisted
     if await is_user_whitelisted(message.chat.id, message.from_user.id):
         return
 
     if ABUSE_PATTERN.search(text):
         safe_text = html.escape(text)
-        censored_text = ABUSE_PATTERN.sub(lambda m: f"<tg-spoiler>{m.group(0)}</tg-spoiler>", safe_text)
+        # Using correct <spoiler> tag for Pyrogram's HTML Parser
+        censored_text = ABUSE_PATTERN.sub(lambda m: f"<spoiler>{m.group(0)}</spoiler>", safe_text)
         
         try:
             await message.delete()
@@ -195,9 +193,9 @@ async def abuse_watcher(client, message):
             user_link = f"<a href='tg://user?id={message.from_user.id}'>{clean_name}</a>"
 
             warning_text = (
-                f"🚫 Hey {user_link}, aapka message remove kar diya gaya hai.\n\n"
+                f"🚫 Hey {user_link}, your message was removed.\n\n"
                 f"🔍 <b>Censored:</b>\n{censored_text}\n\n"
-                f"Kripya group mein aisi bhasha ka prayog na karein."
+                f"Please keep the chat respectful."
             )
 
             sent = await message.reply_text(
