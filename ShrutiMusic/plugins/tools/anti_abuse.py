@@ -1,24 +1,19 @@
 import re
+import aiohttp
 import asyncio
 from pyrogram import Client, filters
 from pyrogram.enums import ChatMemberStatus
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from config import OPENROUTER_API_KEY
 from ShrutiMusic import app
-
-# Yahan hum tumhare naye MongoDB functions ko import kar rahe hain
-# Agar tumhari DB file ka path kuch aur hai, toh is line ko update kar lena
-try:
-    from ShrutiMusic.utils.database import (
-        is_abuse_enabled, 
-        set_abuse_status, 
-        add_whitelist, 
-        remove_whitelist, 
-        get_whitelisted_users, 
-        is_user_whitelisted
-    )
-except ImportError:
-    # Agar direct import fail ho, toh backup path try karega
-    pass 
+from ShrutiMusic.utils.database import (
+    is_abuse_enabled,
+    set_abuse_status,
+    add_whitelist,
+    remove_whitelist,
+    get_whitelisted_users,
+    is_user_whitelisted
+)
 
 # --- Abusive Words List ---
 ABUSIVE_WORDS = [
@@ -57,26 +52,62 @@ ABUSIVE_WORDS = [
     "pillay", "pille", "pilley", "pisaab", "pisab", "pkmkb", "porn", "porno", 
     "pornography", "porns", "porkistan", "pussy", "raand", "rand", "randi", 
     "randibaaz", "randwa", "randy", "ramdi", "rape", "rapist", "saala", "saale", 
-    "saali", "sex", "sexting", "Azadi", "shit", "slut", "suar", "suwar", "tatte", 
+    "saali", "sex", "sexting", "sexy", "shit", "slut", "suar", "suwar", "tatte", 
     "tatti", "tatty", "terimaaki", "terimaki", "tmkb", "tmkc", "tits", "ullu", 
     "vagina", "whore", "xxx", "zandu"
 ]
 
+# Removed BOT_USERNAME from config import, getting it dynamically below
+API_URL = "https://openrouter.ai/api/v1/chat/completions"
 ABUSE_PATTERN = re.compile(r'\b(' + '|'.join(map(re.escape, ABUSIVE_WORDS)) + r')\b', re.IGNORECASE)
 
 # --- Helpers ---
-async def is_admin(chat_id, user_id):
+async def is_admin(chat_id, user_id, app):
     try:
         member = await app.get_chat_member(chat_id, user_id)
         return member.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]
     except:
         return False
 
-# ================= COMMANDS =================
+async def check_toxicity_ai(text: str) -> bool:
+    if not text or not OPENROUTER_API_KEY:
+        return False
+    
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://telegram.org", 
+    }
+    
+    payload = {
+        "model": "google/gemini-2.0-flash-exp:free",
+        "messages": [
+            {
+                "role": "system", 
+                "content": "You are a content filter. Reply ONLY with 'YES' if the message contains hate speech, severe abuse, or extreme profanity. Reply 'NO' if safe."
+            },
+            {"role": "user", "content": text}
+        ],
+        "temperature": 0.1,
+        "max_tokens": 5
+    }
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(API_URL, headers=headers, json=payload) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    answer = data['choices'][0]['message']['content'].strip().upper()
+                    return "YES" in answer
+    except Exception:
+        return False
+    return False
+
+# ================= WRAPPER FUNCTION (Important) =================
 
 @app.on_message(filters.command("abuse") & filters.group)
 async def toggle_abuse(client, message):
-    if not await is_admin(message.chat.id, message.from_user.id):
+    if not await is_admin(message.chat.id, message.from_user.id, app):
         return await message.reply_text("❌ Only admins can use this.")
 
     if len(message.command) > 1:
@@ -90,10 +121,9 @@ async def toggle_abuse(client, message):
     state = "Enabled ✅" if new_status else "Disabled ❌"
     await message.reply_text(f"🛡 Abuse protection is now {state}")
 
-
 @app.on_message(filters.command(["auth", "promote"]) & filters.group)
 async def auth_user(client, message):
-    if not await is_admin(message.chat.id, message.from_user.id):
+    if not await is_admin(message.chat.id, message.from_user.id, app):
         return
 
     target = message.reply_to_message.from_user if message.reply_to_message else None
@@ -103,10 +133,9 @@ async def auth_user(client, message):
     await add_whitelist(message.chat.id, target.id)
     await message.reply_text(f"✅ {target.mention} is now whitelisted from abuse filter.")
 
-
 @app.on_message(filters.command("unauth") & filters.group)
 async def unauth_user(client, message):
-    if not await is_admin(message.chat.id, message.from_user.id):
+    if not await is_admin(message.chat.id, message.from_user.id, app):
         return
 
     target = message.reply_to_message.from_user if message.reply_to_message else None
@@ -116,10 +145,9 @@ async def unauth_user(client, message):
     await remove_whitelist(message.chat.id, target.id)
     await message.reply_text(f"🚫 {target.mention} removed from whitelist.")
 
-
 @app.on_message(filters.command("authlist") & filters.group)
 async def auth_list(client, message):
-    if not await is_admin(message.chat.id, message.from_user.id):
+    if not await is_admin(message.chat.id, message.from_user.id, app):
         return
 
     users = await get_whitelisted_users(message.chat.id)
@@ -135,8 +163,7 @@ async def auth_list(client, message):
             text += f"- ID: {uid}\n"
     await message.reply_text(text)
 
-
-# --- MAIN WATCHER (Word Filter) ---
+# --- MAIN WATCHER ---
 @app.on_message(filters.group & ~filters.bot, group=10)
 async def abuse_watcher(client, message):
     text = message.text or message.caption
@@ -152,19 +179,26 @@ async def abuse_watcher(client, message):
     detected = False
     censored_text = text
 
-    # Fast Local Word Check
+    # 1. Local Check
     if ABUSE_PATTERN.search(text):
         detected = True
         censored_text = ABUSE_PATTERN.sub(lambda m: f"||{m.group(0)}||", text)
+
+    # 2. AI Check (Only if not already detected)
+    if not detected and OPENROUTER_API_KEY:
+        if await check_toxicity_ai(text):
+            detected = True
+            censored_text = f"||{text}||"
 
     if detected:
         try:
             await message.delete()
             
+            bot_username = (await app.get_me()).username
             buttons = InlineKeyboardMarkup([
                 [
-                    InlineKeyboardButton("➕ Add Me", url=f"https://t.me/{app.username}?startgroup=true"),
-                    InlineKeyboardButton("📢 Updates", url="https://t.me/RoboKaty")
+                    InlineKeyboardButton("➕ Add Me", url=f"https://t.me/{bot_username}?startgroup=true"),
+                    InlineKeyboardButton("📢 Updates", url="https://t.me/robokaty")
                 ]
             ])
 
@@ -186,3 +220,4 @@ async def abuse_watcher(client, message):
             await sent.delete()
         except Exception as e:
             print(f"Error deleting abuse: {e}")
+            
