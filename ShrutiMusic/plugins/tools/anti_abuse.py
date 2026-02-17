@@ -1,7 +1,8 @@
 import re
+import html
 import asyncio
 from pyrogram import Client, filters
-from pyrogram.enums import ChatMemberStatus
+from pyrogram.enums import ChatMemberStatus, ParseMode
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from ShrutiMusic import app
 from ShrutiMusic.utils.database import (
@@ -58,76 +59,106 @@ ABUSIVE_WORDS = [
 ABUSE_PATTERN = re.compile(r'\b(' + '|'.join(map(re.escape, ABUSIVE_WORDS)) + r')\b', re.IGNORECASE)
 
 # --- Helpers ---
-async def is_admin(chat_id, user_id, app):
+
+async def has_change_info_rights(chat_id, user_id, app):
+    """Check if user is Owner OR Admin with 'Change Group Info' rights."""
     try:
         member = await app.get_chat_member(chat_id, user_id)
-        return member.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]
+        if member.status == ChatMemberStatus.OWNER:
+            return True
+        if member.status == ChatMemberStatus.ADMINISTRATOR:
+            return getattr(member.privileges, "can_change_info", False)
+        return False
     except:
         return False
 
+async def get_target_user(client, message):
+    """Extract user from reply, username, or ID."""
+    if message.reply_to_message:
+        return message.reply_to_message.from_user
+    
+    if len(message.command) > 1:
+        target = message.text.split(None, 1)[1]
+        try:
+            # Resolves @username, ID, or phone number
+            user = await client.get_users(target)
+            return user
+        except:
+            return None
+    return None
 
-# ================= WRAPPER FUNCTION =================
+# ================= COMMANDS =================
 
 @app.on_message(filters.command("abuse") & filters.group)
 async def toggle_abuse(client, message):
-    if not await is_admin(message.chat.id, message.from_user.id, app):
-        return await message.reply_text("❌ Only admins can use this.")
+    if not await has_change_info_rights(message.chat.id, message.from_user.id, app):
+        return await message.reply_text("❌ Only admins with **'Change Group Info'** rights can use this command.")
 
-    if len(message.command) > 1:
-        arg = message.command[1].lower()
-        new_status = arg in ["on", "enable", "yes"]
+    if len(message.command) == 1:
+        text = (
+            "<b>🛡 Abuse Filter Commands:</b>\n\n"
+            "• <code>/abuse on</code> ya <code>enable</code> - Filter chalu karein\n"
+            "• <code>/abuse off</code> ya <code>disable</code> - Filter band karein\n"
+            "• <code>/authabuse</code> ya <code>/abuseauth</code> - User ko chhoot dein (Reply/Username/ID)\n"
+            "• <code>/unauthabuse</code> ya <code>/unauth</code> - User se chhoot wapas lein\n"
+            "• <code>/authlistabuse</code> - Whitelisted logo ki list dekhein"
+        )
+        return await message.reply_text(text, parse_mode=ParseMode.HTML)
+
+    arg = message.command[1].lower()
+    if arg in ["on", "enable", "yes"]:
+        await set_abuse_status(message.chat.id, True)
+        await message.reply_text("🛡 Abuse protection is now <b>Enabled ✅</b>", parse_mode=ParseMode.HTML)
+    elif arg in ["off", "disable", "no"]:
+        await set_abuse_status(message.chat.id, False)
+        await message.reply_text("🛡 Abuse protection is now <b>Disabled ❌</b>", parse_mode=ParseMode.HTML)
     else:
-        current = await is_abuse_enabled(message.chat.id)
-        new_status = not current
-    
-    await set_abuse_status(message.chat.id, new_status)
-    state = "Enabled ✅" if new_status else "Disabled ❌"
-    await message.reply_text(f"🛡 Abuse protection is now {state}")
+        await message.reply_text("❌ Invalid command. Use <code>/abuse on</code> or <code>/abuse off</code>.", parse_mode=ParseMode.HTML)
 
 
-@app.on_message(filters.command(["auth", "promote"]) & filters.group)
+@app.on_message(filters.command(["authabuse", "abuseauth"]) & filters.group)
 async def auth_user(client, message):
-    if not await is_admin(message.chat.id, message.from_user.id, app):
-        return
+    if not await has_change_info_rights(message.chat.id, message.from_user.id, app):
+        return await message.reply_text("❌ Only admins with **'Change Group Info'** rights can use this command.")
 
-    target = message.reply_to_message.from_user if message.reply_to_message else None
+    target = await get_target_user(client, message)
     if not target:
-        return await message.reply_text("⚠️ Reply to a user to auth them.")
+        return await message.reply_text("⚠️ Sahi user nahi mila! \nUse: <code>/authabuse @username</code> ya <code>User ID</code> ya fir kisi message par <b>Reply</b> karein.", parse_mode=ParseMode.HTML)
 
     await add_whitelist(message.chat.id, target.id)
-    await message.reply_text(f"✅ {target.mention} is now whitelisted from abuse filter.")
+    await message.reply_text(f"✅ {target.mention} ko abuse filter se chhoot (whitelist) mil gayi hai.", parse_mode=ParseMode.HTML)
 
 
-@app.on_message(filters.command("unauth") & filters.group)
+@app.on_message(filters.command(["unauthabuse", "unauth"]) & filters.group)
 async def unauth_user(client, message):
-    if not await is_admin(message.chat.id, message.from_user.id, app):
-        return
+    if not await has_change_info_rights(message.chat.id, message.from_user.id, app):
+        return await message.reply_text("❌ Only admins with **'Change Group Info'** rights can use this command.")
 
-    target = message.reply_to_message.from_user if message.reply_to_message else None
+    target = await get_target_user(client, message)
     if not target:
-        return await message.reply_text("⚠️ Reply to a user to un-auth them.")
+        return await message.reply_text("⚠️ Sahi user nahi mila! \nUse: <code>/unauthabuse @username</code> ya <code>User ID</code> ya fir kisi message par <b>Reply</b> karein.", parse_mode=ParseMode.HTML)
 
     await remove_whitelist(message.chat.id, target.id)
-    await message.reply_text(f"🚫 {target.mention} removed from whitelist.")
+    await message.reply_text(f"🚫 {target.mention} ko whitelist se nikal diya gaya hai. Ab gaali dene par message delete hoga.", parse_mode=ParseMode.HTML)
 
 
-@app.on_message(filters.command("authlist") & filters.group)
+@app.on_message(filters.command("authlistabuse") & filters.group)
 async def auth_list(client, message):
-    if not await is_admin(message.chat.id, message.from_user.id, app):
-        return
+    if not await has_change_info_rights(message.chat.id, message.from_user.id, app):
+        return await message.reply_text("❌ Only admins with **'Change Group Info'** rights can use this command.")
 
     users = await get_whitelisted_users(message.chat.id)
     if not users:
-        return await message.reply_text("📂 Whitelist is empty.")
+        return await message.reply_text("📂 Whitelist abhi empty hai. Kisi ko chhoot nahi mili hai.")
     
-    text = "📋 **Whitelisted Users:**\n"
+    text = "📋 <b>Whitelisted Users (Jinhe gaali dene ki chhoot hai):</b>\n\n"
     for uid in users:
         try:
             u = await app.get_users(uid)
-            text += f"- {u.mention}\n"
+            text += f"• {u.mention}\n"
         except:
-            text += f"- ID: {uid}\n"
-    await message.reply_text(text)
+            text += f"• ID: <code>{uid}</code>\n"
+    await message.reply_text(text, parse_mode=ParseMode.HTML)
 
 
 # --- MAIN WATCHER ---
@@ -137,14 +168,17 @@ async def abuse_watcher(client, message):
     if not text:
         return
 
+    # Check if filter is ON in database
     if not await is_abuse_enabled(message.chat.id):
         return
 
+    # Check if user is whitelisted
     if await is_user_whitelisted(message.chat.id, message.from_user.id):
         return
 
     if ABUSE_PATTERN.search(text):
-        censored_text = ABUSE_PATTERN.sub(lambda m: f"||{m.group(0)}||", text)
+        safe_text = html.escape(text)
+        censored_text = ABUSE_PATTERN.sub(lambda m: f"<tg-spoiler>{m.group(0)}</tg-spoiler>", safe_text)
         
         try:
             await message.delete()
@@ -157,19 +191,20 @@ async def abuse_watcher(client, message):
                 ]
             ])
 
-            clean_name = message.from_user.first_name.replace("[", "").replace("]", "")
-            user_link = f"[{clean_name}](tg://user?id={message.from_user.id})"
+            clean_name = html.escape(message.from_user.first_name)
+            user_link = f"<a href='tg://user?id={message.from_user.id}'>{clean_name}</a>"
 
             warning_text = (
-                f"🚫 Hey {user_link}, your message was removed.\n\n"
-                f"🔍 **Censored:**\n{censored_text}\n\n"
-                f"Please keep the chat respectful."
+                f"🚫 Hey {user_link}, aapka message remove kar diya gaya hai.\n\n"
+                f"🔍 <b>Censored:</b>\n{censored_text}\n\n"
+                f"Kripya group mein aisi bhasha ka prayog na karein."
             )
 
             sent = await message.reply_text(
                 warning_text,
                 reply_markup=buttons,
-                disable_web_page_preview=True
+                disable_web_page_preview=True,
+                parse_mode=ParseMode.HTML
             )
             await asyncio.sleep(60)
             await sent.delete()
