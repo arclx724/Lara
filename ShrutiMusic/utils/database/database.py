@@ -1,25 +1,3 @@
-# Copyright (c) 2025 Nand Yaduwanshi <NoxxOP>
-# Location: Supaul, Bihar
-#
-# All rights reserved.
-#
-# This code is the intellectual property of Nand Yaduwanshi.
-# You are not allowed to copy, modify, redistribute, or use this
-# code for commercial or personal projects without explicit permission.
-#
-# Allowed:
-# - Forking for personal learning
-# - Submitting improvements via pull requests
-#
-# Not Allowed:
-# - Claiming this code as your own
-# - Re-uploading without credit or permission
-# - Selling or using commercially
-#
-# Contact for permissions:
-# Email: badboy809075@gmail.com
-
-
 import random
 import asyncio
 from datetime import date
@@ -47,6 +25,8 @@ playtypedb = mongodb.playtypedb
 skipdb = mongodb.skipmode
 sudoersdb = mongodb.sudoers
 usersdb = mongodb.tgusersdb
+abusedb = mongodb.abusefilter
+whitelistdb = mongodb.abusewhitelist
 
 # Shifting to memory [mongo sucks often]
 active = []
@@ -688,15 +668,41 @@ async def remove_banned_user(user_id: int):
     if not is_gbanned:
         return
     return await blockeddb.delete_one({"user_id": user_id})
+# ==========================================
+# 🛑 ABUSE FILTER DATABASE SYSTEM
+# ==========================================
 
+async def is_abuse_enabled(chat_id: int) -> bool:
+    chat = await abusedb.find_one({"chat_id": chat_id})
+    if not chat:
+        return False
+    return True
 
-# ©️ Copyright Reserved - @NoxxOP  Nand Yaduwanshi
+async def set_abuse_status(chat_id: int, status: bool):
+    is_enabled = await is_abuse_enabled(chat_id)
+    if status and not is_enabled:
+        return await abusedb.insert_one({"chat_id": chat_id})
+    elif not status and is_enabled:
+        return await abusedb.delete_one({"chat_id": chat_id})
 
-# ===========================================
-# ©️ 2025 Nand Yaduwanshi (aka @NoxxOP)
-# 🔗 GitHub : https://github.com/NoxxOP/ShrutiMusic
-# 📢 Telegram Channel : https://t.me/ShrutiBots
-# ===========================================
+async def get_whitelisted_users(chat_id: int) -> list:
+    chat = await whitelistdb.find_one({"chat_id": chat_id})
+    if not chat:
+        return []
+    return chat.get("users", [])
 
+async def is_user_whitelisted(chat_id: int, user_id: int) -> bool:
+    users = await get_whitelisted_users(chat_id)
+    return user_id in users
 
-# ❤️ Love From ShrutiBots 
+async def add_whitelist(chat_id: int, user_id: int):
+    users = await get_whitelisted_users(chat_id)
+    if user_id not in users:
+        users.append(user_id)
+        await whitelistdb.update_one({"chat_id": chat_id}, {"$set": {"users": users}}, upsert=True)
+
+async def remove_whitelist(chat_id: int, user_id: int):
+    users = await get_whitelisted_users(chat_id)
+    if user_id in users:
+        users.remove(user_id)
+        await whitelistdb.update_one({"chat_id": chat_id}, {"$set": {"users": users}}, upsert=True)
