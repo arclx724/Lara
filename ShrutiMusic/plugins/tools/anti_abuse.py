@@ -16,7 +16,7 @@ from ShrutiMusic.utils.database import (
 
 # --- Abusive Words List ---
 ABUSIVE_WORDS = [
-    "aand", "aandu", "aad", "ass", "asshole", "b.c", "b.c.", "b.k.l", "b.s.d.k", 
+    "aand", "rascal", "aandu", "aad", "ass", "asshole", "b.c", "b.c.", "b.k.l", "b.s.d.k", 
     "babbe", "babbey", "bahenchod", "bahenchodd", "bakchod", "bakchodi", "bakchodd", 
     "bastard", "bc", "behench*d", "behenchod", "behenchodd", "behenka", "betichod", 
     "bevakoof", "bevda", "bevdey", "bevkoof", "bewakoof", "bewday", "bewkoof", "bewkuf", 
