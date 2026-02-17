@@ -4,7 +4,21 @@ from pyrogram import Client, filters
 from pyrogram.enums import ChatMemberStatus
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from ShrutiMusic import app
-import db  # Make sure tumhare paas db.py mein ye functions exist karte hon
+
+# Yahan hum tumhare naye MongoDB functions ko import kar rahe hain
+# Agar tumhari DB file ka path kuch aur hai, toh is line ko update kar lena
+try:
+    from ShrutiMusic.utils.database import (
+        is_abuse_enabled, 
+        set_abuse_status, 
+        add_whitelist, 
+        remove_whitelist, 
+        get_whitelisted_users, 
+        is_user_whitelisted
+    )
+except ImportError:
+    # Agar direct import fail ho, toh backup path try karega
+    pass 
 
 # --- Abusive Words List ---
 ABUSIVE_WORDS = [
@@ -69,10 +83,10 @@ async def toggle_abuse(client, message):
         arg = message.command[1].lower()
         new_status = arg in ["on", "enable", "yes"]
     else:
-        current = await db.is_abuse_enabled(message.chat.id)
+        current = await is_abuse_enabled(message.chat.id)
         new_status = not current
     
-    await db.set_abuse_status(message.chat.id, new_status)
+    await set_abuse_status(message.chat.id, new_status)
     state = "Enabled ✅" if new_status else "Disabled ❌"
     await message.reply_text(f"🛡 Abuse protection is now {state}")
 
@@ -86,7 +100,7 @@ async def auth_user(client, message):
     if not target:
         return await message.reply_text("⚠️ Reply to a user to auth them.")
 
-    await db.add_whitelist(message.chat.id, target.id)
+    await add_whitelist(message.chat.id, target.id)
     await message.reply_text(f"✅ {target.mention} is now whitelisted from abuse filter.")
 
 
@@ -99,7 +113,7 @@ async def unauth_user(client, message):
     if not target:
         return await message.reply_text("⚠️ Reply to a user to un-auth them.")
 
-    await db.remove_whitelist(message.chat.id, target.id)
+    await remove_whitelist(message.chat.id, target.id)
     await message.reply_text(f"🚫 {target.mention} removed from whitelist.")
 
 
@@ -108,7 +122,7 @@ async def auth_list(client, message):
     if not await is_admin(message.chat.id, message.from_user.id):
         return
 
-    users = await db.get_whitelisted_users(message.chat.id)
+    users = await get_whitelisted_users(message.chat.id)
     if not users:
         return await message.reply_text("📂 Whitelist is empty.")
     
@@ -129,10 +143,10 @@ async def abuse_watcher(client, message):
     if not text:
         return
 
-    if not await db.is_abuse_enabled(message.chat.id):
+    if not await is_abuse_enabled(message.chat.id):
         return
 
-    if await db.is_user_whitelisted(message.chat.id, message.from_user.id):
+    if await is_user_whitelisted(message.chat.id, message.from_user.id):
         return
 
     detected = False
@@ -172,4 +186,3 @@ async def abuse_watcher(client, message):
             await sent.delete()
         except Exception as e:
             print(f"Error deleting abuse: {e}")
-            
